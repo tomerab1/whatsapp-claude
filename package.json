@@ -1,0 +1,16 @@
+{
+  "name": "whatsapp-claude",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Watch one WhatsApp group and reply when tagged @claude, via a sandboxed headless claude -p. No Anthropic SDK.",
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "baileys": "7.0.0-rc13",
+    "better-sqlite3": "^12.11.1",
+    "pino": "^10.3.1",
+    "qrcode-terminal": "^0.12.0"
+  }
+}

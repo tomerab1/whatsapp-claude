@@ -1,0 +1,11 @@
+# local state — MUST never be published
+node_modules/
+auth/
+messages.db*
+usage.jsonl
+scratch/
+settings.locked.json
+config.json
+
+# internal design docs (reference the author's other private group + home paths)
+docs/
