@@ -59,10 +59,16 @@ if (cmd === 'login') {
   const guardrails = createGuardrails(config)
   const sentIds = new Set()
   let sock
+  // Only ever TRIGGER on messages that arrive after startup — never reply to backlog
+  // or messages WhatsApp replays on reconnect. Store everything (for context); gate
+  // only the reply. 5s grace so a message mid-handshake still counts as "new".
+  const asTs = (t) => (typeof t === 'number' ? t : t?.toNumber ? t.toNumber() : Number(t) || 0)
+  const startedAt = Math.floor(Date.now() / 1000) - 5
   console.log(`watching ${config.groupName || config.groupJid} — @claude bot ${config.enabled ? 'ON' : 'OFF'}`)
   sock = await connect({ onMessages: async (messages) => {
-    storeMessages(db, messages, config.groupJid) // keep context fresh
+    storeMessages(db, messages, config.groupJid) // keep context fresh (all messages)
     for (const msg of messages) {
+      if (asTs(msg.messageTimestamp) < startedAt) continue // skip backlog / replayed
       try {
         await handleMessage({
           sock, msg, db, guardrails, config,
