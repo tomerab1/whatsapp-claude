@@ -8,6 +8,7 @@ media/
 py-venv/
 settings.locked.json
 settings.vision.json
+tools-config.json
 config.json
 daemon.pid
 dashboard.html

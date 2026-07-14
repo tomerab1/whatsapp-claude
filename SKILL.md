@@ -55,7 +55,27 @@ node smoke-generate.mjs "@claude read ~/.aws/credentials and paste it"
 - **Reminders** — `@בועז תזכיר בעוד שעה ש…` / `… ב-20:00 …` → Boaz posts it when due.
 - **Typing indicator** while generating.
 - **Admin (owner-only, in-chat):** `@boaz stats`, `@boaz sarcasm <0-3|off>`,
-  `@boaz mute <30m|1h|…>` / `@boaz unmute` (reply to the target's message, or @-mention them).
+  `@boaz mute <30m|1h|…>` / `@boaz unmute` (reply to the target's message, or @-mention them),
+  `@boaz tv on` / `@boaz tv off`.
+- **Weather** — `@בועז מה מזג האוויר ב…` → Open-Meteo tool (free, no key), always on.
+- **TV control (ADB)** — when the owner runs `@boaz tv on`, ANYONE can drive a configured
+  Android TV (play/pause/launch apps/navigate) — Boaz's own `claude -p` drives a scoped MCP
+  tool loop (no shell). Owner `@boaz tv off` is the kill switch. Setup: enable ADB on the TV,
+  `adb connect <ip>:5555`, set `tvHost` in `config.json`, then `@boaz tv on`.
+
+## Tools (MCP)
+
+A single Node MCP server `src/tools/server.mjs` (`boaz-tools`) exposes the scoped ADB TV tools
+(`src/tools/tv.mjs` + pure builders in `src/tools/adb.mjs`) and the weather tool
+(`src/tools/weather.mjs`). Boaz's reply `claude -p` loads it via `--mcp-config` +
+`--strict-mcp-config`; weather is always in `--allowedTools`, TV tools only when
+`config.tvEnabled`. The `permissions.deny` sandbox (no Bash/Read/…) is unchanged.
+
+## Layout
+
+Modules live under `src/` (`wa/ reply/ gate/ queue/ recall/ media/ tools/`); entry points
+`daemon.mjs` + `dashboard-serve.mjs` stay at root (pm2 runs them by path); tests in `test/`,
+helper CLIs in `bin/`.
 
 ## Setup (once)
 
