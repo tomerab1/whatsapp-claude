@@ -26,6 +26,12 @@ export function openDb(path) {
 const safeJson = (o) => JSON.stringify(o, (_k, v) => (typeof v === 'bigint' ? v.toString() : v))
 const toTs = (t) => (typeof t === 'number' ? t : t?.toNumber ? t.toNumber() : Number(t) || null)
 
+// The quoted-message id lives under whichever message subtype carries the reply —
+// not only text (a voice/image reply keeps it under audioMessage/imageMessage).
+const quotedIdOf = (m) =>
+  (m?.extendedTextMessage?.contextInfo || m?.imageMessage?.contextInfo || m?.videoMessage?.contextInfo
+    || m?.audioMessage?.contextInfo || m?.documentMessage?.contextInfo || m?.stickerMessage?.contextInfo)?.stanzaId || null
+
 export function extractText(msg) {
   const m = msg.message
   if (!m) return { kind: 'empty', text: '' }
@@ -60,7 +66,7 @@ export function storeMessages(db, messages, chatJid) {
         ts: toTs(msg.messageTimestamp),
         kind,
         text,
-        quoted_id: msg.message?.extendedTextMessage?.contextInfo?.stanzaId || null,
+        quoted_id: quotedIdOf(msg.message),
         raw: safeJson(msg),
       })
       n += info.changes

@@ -27,6 +27,14 @@ export function appendUsage(usagePath, entry) {
 const senderOf = (msg, jid) =>
   msg.key?.participant || msg.participant || (msg.key?.fromMe ? (msg.key?.participant || 'me') : jid)
 
+// contextInfo (quote/mentions) lives under whichever message subtype it is — a voice
+// note carries it under audioMessage, an image under imageMessage, etc. (NOT only text).
+const contextInfoOf = (msg) => {
+  const m = msg.message || {}
+  return m.extendedTextMessage?.contextInfo || m.imageMessage?.contextInfo || m.videoMessage?.contextInfo
+    || m.audioMessage?.contextInfo || m.documentMessage?.contextInfo || m.stickerMessage?.contextInfo || null
+}
+
 const quotedSenderOf = (db, quotedId) =>
   quotedId ? (db.prepare(`SELECT sender_jid FROM messages WHERE id = ?`).get(quotedId)?.sender_jid ?? null) : null
 
@@ -44,7 +52,7 @@ export async function handleIncoming(ctx) {
   const { kind, text } = extractText(msg)
   if (isBotEcho(text, config.botPrefix)) return
   const sender = senderOf(msg, jid)
-  const ci = msg.message?.extendedTextMessage?.contextInfo
+  const ci = contextInfoOf(msg)
   const quotedId = ci?.stanzaId || null
   const quoted = quotedId ? getMessageText(db, quotedId) : null
   const quotedIsBot = !!(quoted && isBotEcho(quoted.text, config.botPrefix))
