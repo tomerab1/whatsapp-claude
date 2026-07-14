@@ -12,7 +12,7 @@ async function getVersion() {
   catch { return (await fetchLatestBaileysVersion()).version }
 }
 
-export async function connect({ onReady, onMessages, pairPhone } = {}) {
+export async function connect({ onReady, onMessages, onClose, pairPhone } = {}) {
   mkdirSync(AUTH_DIR, { recursive: true })
   const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR)
   const version = await getVersion()
@@ -51,8 +51,9 @@ export async function connect({ onReady, onMessages, pairPhone } = {}) {
         console.log('logged out — delete ~/.claude/whatsapp-claude/auth and run `login` again.')
         process.exit(1)
       }
+      onClose?.() // let the caller pause sending until the new socket is open
       console.log(`connection closed (${code}) — reconnecting in 3s…`)
-      setTimeout(() => connect({ onReady, onMessages, pairPhone }), 3000)
+      setTimeout(() => connect({ onReady, onMessages, onClose, pairPhone }), 3000)
     }
   })
   return sock

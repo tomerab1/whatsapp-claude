@@ -99,6 +99,7 @@ if (cmd === 'login') {
   const asTs = (t) => (typeof t === 'number' ? t : t?.toNumber ? t.toNumber() : Number(t) || 0)
   const startedAt = Math.floor(Date.now() / 1000) - 5
   let sock
+  let connected = false // true only while the socket is open — pause sends otherwise
 
   // Download an incoming voice note / image to the media dir; returns the file path.
   const downloadMedia = async (msg, kind) => {
@@ -111,7 +112,7 @@ if (cmd === 'login') {
   // Single worker: drains the outbox one reply at a time (bounds cost, preserves order).
   async function workerLoop() {
     let did = false
-    try { if (sock) did = await processNext({ sock, db, config, paths, claudePath, sentIds, log, guardrails }) }
+    try { if (sock && connected) did = await processNext({ sock, db, config, paths, claudePath, sentIds, log, guardrails }) }
     catch (e) { console.error('worker error:', e?.message || e) }
     setTimeout(workerLoop, did ? 0 : config.workerPollMs)
   }
@@ -119,7 +120,7 @@ if (cmd === 'login') {
   // Reminder scheduler: post any due reminders.
   async function reminderLoop() {
     try {
-      if (sock) for (const r of dueReminders(db)) {
+      if (sock && connected) for (const r of dueReminders(db)) {
         const s = await sock.sendMessage(config.groupJid, { text: `${config.botPrefix} ⏰ תזכורת: ${r.text}` })
         if (s?.key?.id) sentIds.add(s.key.id)
         markReminderSent(db, r.id)
@@ -130,7 +131,10 @@ if (cmd === 'login') {
   }
 
   console.log(`watching ${config.groupName || config.groupJid} — @${config.botName} bot ${config.enabled ? 'ON' : 'OFF'}`)
-  sock = await connect({ onMessages: async (messages) => {
+  sock = await connect({
+    onReady: (s) => { sock = s; connected = true }, // refresh the socket on every (re)connect
+    onClose: () => { connected = false },           // pause sends until it's back
+    onMessages: async (messages) => {
     storeMessages(db, messages, config.groupJid) // keep context fresh (all messages)
     for (const msg of messages) {
       if (asTs(msg.messageTimestamp) < startedAt) continue // skip backlog / replayed
