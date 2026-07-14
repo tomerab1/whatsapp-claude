@@ -19,7 +19,13 @@ export const tvTools = [
   {
     name: 'get_focused_app', description: 'Return the foreground app/activity on the TV.',
     inputSchema: { type: 'object', properties: {} },
-    handler: async () => ok((await adb(adbArgs(HOST(), ['dumpsys', 'window', 'windows']))).split('\n').filter((l) => /mCurrentFocus|mFocusedApp/.test(l)).join('\n') || '(unknown)'),
+    handler: async () => {
+      const out = await adb(adbArgs(HOST(), ['dumpsys', 'activity', 'activities']))
+      const line = out.split('\n').map((l) => l.trim()).find((l) => /ResumedActivity/.test(l))
+      if (line) return ok(line)
+      const win = await adb(adbArgs(HOST(), ['dumpsys', 'window']))
+      return ok(win.split('\n').map((l) => l.trim()).find((l) => /mCurrentFocus|mFocusedApp/.test(l)) || '(unknown)')
+    },
   },
   {
     name: 'press_key', description: 'Press a remote key: ok, up, down, left, right, back, home, menu, play_pause, play, pause, stop, next, prev, rewind, forward, volume_up, volume_down, mute, power, sleep, wakeup.',
@@ -45,9 +51,18 @@ export const tvTools = [
     name: 'inspect_screen', description: 'List the labelled on-screen elements with tap targets.',
     inputSchema: { type: 'object', properties: {} },
     handler: async () => {
-      await adb(adbArgs(HOST(), ['uiautomator', 'dump', '/sdcard/boaz-ui.xml']))
-      const xml = await adb(adbArgs(HOST(), ['cat', '/sdcard/boaz-ui.xml']))
-      return ok(formatUi(parseUiDump(xml)))
+      // uiautomator ignores a custom path on some boxes; use its default + read back the
+      // path it reports ("UI hierarchy dumped to: <path>"). Some TV apps block dumping
+      // entirely — degrade to advising screenshot rather than throwing (which kills the loop).
+      try {
+        const dumpOut = await adb(adbArgs(HOST(), ['uiautomator', 'dump']))
+        const m = dumpOut.match(/dumped to:?\s*(\S+)/i)
+        const path = m ? m[1] : '/sdcard/window_dump.xml'
+        const xml = await adb(adbArgs(HOST(), ['cat', path]))
+        return ok(formatUi(parseUiDump(xml)))
+      } catch {
+        return ok('(UI dump unavailable on this app/box — use screenshot to see the screen, then tap by coordinates.)')
+      }
     },
   },
   {
