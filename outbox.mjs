@@ -31,6 +31,7 @@ export function initOutbox(db) {
   if (!cols.has('media_kind')) db.exec(`ALTER TABLE outbox ADD COLUMN media_kind TEXT`)
   if (!cols.has('media_path')) db.exec(`ALTER TABLE outbox ADD COLUMN media_path TEXT`)
   if (!cols.has('want_voice')) db.exec(`ALTER TABLE outbox ADD COLUMN want_voice INTEGER DEFAULT 0`)
+  if (!cols.has('want_scan')) db.exec(`ALTER TABLE outbox ADD COLUMN want_scan INTEGER DEFAULT 0`)
   return db
 }
 
@@ -41,9 +42,9 @@ export function enqueue(db, row, now = now0) {
     .prepare(
       `INSERT OR IGNORE INTO outbox
         (msg_id, chat_jid, sender_jid, sender_name, question, quoted_id, enqueued_ts, status, attempts, updated_ts,
-         media_kind, media_path, want_voice)
+         media_kind, media_path, want_voice, want_scan)
        VALUES (@msg_id, @chat_jid, @sender_jid, @sender_name, @question, @quoted_id, @ts, 'queued', 0, @ts,
-         @media_kind, @media_path, @want_voice)`,
+         @media_kind, @media_path, @want_voice, @want_scan)`,
     )
     .run({
       msg_id: row.msgId,
@@ -56,6 +57,7 @@ export function enqueue(db, row, now = now0) {
       media_kind: row.mediaKind ?? null,
       media_path: row.mediaPath ?? null,
       want_voice: row.wantVoice ? 1 : 0,
+      want_scan: row.wantScan ? 1 : 0,
     })
   return info.changes > 0
 }

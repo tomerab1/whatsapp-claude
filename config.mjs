@@ -36,6 +36,8 @@ export const DEFAULT_CONFIG = {
   followUps: true,         // reply when someone replies to Boaz without re-tagging
   voice: true,             // allow voice-note replies (on request) + voice-question transcription
   vision: true,            // allow image understanding on @boaz-captioned images
+  voiceWakeword: true,     // transcribe any voice note (local/free) + reply if "בועז" is spoken
+  voiceMaxSec: 60,         // don't wake-scan voice notes longer than this (bounds CPU)
 }
 
 export function mergeConfig(fileCfg) {

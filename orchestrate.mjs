@@ -35,6 +35,17 @@ const contextInfoOf = (msg) => {
     || m.audioMessage?.contextInfo || m.documentMessage?.contextInfo || m.stickerMessage?.contextInfo || null
 }
 
+const audioSeconds = (msg) => {
+  const s = msg.message?.audioMessage?.seconds
+  return typeof s === 'number' ? s : s?.toNumber ? s.toNumber() : s != null ? Number(s) : null
+}
+
+// The spoken wake-word: any trigger with its leading @ stripped (e.g. "בועז", "boaz").
+const hasWakeWord = (text, triggers) => {
+  const hay = (text || '').toLowerCase()
+  return (triggers || []).some((t) => hay.includes(t.replace(/^@/, '').toLowerCase()))
+}
+
 const quotedSenderOf = (db, quotedId) =>
   quotedId ? (db.prepare(`SELECT sender_jid FROM messages WHERE id = ?`).get(quotedId)?.sender_jid ?? null) : null
 
@@ -67,6 +78,20 @@ export async function handleIncoming(ctx) {
   const mediaAddressed = config.followUps && quotedIsBot // voice/image replying to Boaz count even without text
   const isMedia = kind === 'voice' || kind === 'image'
   const wantsBoaz = addressed || (isMedia && (mediaAddressed || (kind === 'image' && matchesCaptionTrigger(text, config.triggers))))
+
+  // Cold voice note (not a reply to Boaz): transcribe locally (free) and reply only if
+  // "בועז" is spoken. Bypasses reply-guardrails at enqueue — transcription costs nothing;
+  // the LLM cost is gated later (after the wake-word matches) in processNext.
+  if (!wantsBoaz && kind === 'voice' && config.voice && config.voiceWakeword) {
+    const dur = audioSeconds(msg)
+    if (dur != null && dur > config.voiceMaxSec) return // skip long clips (bounds CPU)
+    if (isMuted(db, sender)) return
+    let mediaPath = null
+    try { mediaPath = await downloadMedia(msg, 'voice') } catch (e) { log?.({ ts: Date.now(), sender, error: 'download:' + (e?.message || e) }); return }
+    enqueue(db, { msgId: id, chatJid: jid, senderJid: sender, senderName: msg.pushName || null, question: '', mediaKind: 'voice', mediaPath, wantScan: true })
+    log?.({ ts: Date.now(), sender, event: 'voice-scan-enqueued', durationSec: dur })
+    return
+  }
   if (!wantsBoaz) return
 
   // 3) Muted member → silently drop.
@@ -150,7 +175,7 @@ async function handleAdmin(ctx, admin, msg) {
 
 // Process one queued reply: transcribe/vision/text → scan → deliver (text or voice).
 export async function processNext(ctx) {
-  const { sock, db, config, paths, claudePath, sentIds, log } = ctx
+  const { sock, db, config, paths, claudePath, sentIds, log, guardrails } = ctx
   const row = claimNext(db)
   if (!row) return false
 
@@ -161,6 +186,18 @@ export async function processNext(ctx) {
       let question = row.question
       if (row.media_kind === 'voice' && row.media_path) {
         try { question = (await transcribeAudio(row.media_path)) || '' } catch (e) { question = '' }
+        if (row.want_scan) {
+          // Cold voice note: only reply if "בועז" was actually spoken (wake-word).
+          if (!question || !hasWakeWord(question, config.triggers)) {
+            markSent(db, row.msg_id, null)
+            log?.({ ts: Date.now(), sender: row.sender_jid, event: 'voice-no-wake', transcript: (question || '').slice(0, 60) })
+            return true
+          }
+          // Wake matched → now it's a real question; apply the reply guardrails (LLM cost).
+          const gate = guardrails?.check(row.sender_jid)
+          if (gate && !gate.allowed) { markSent(db, row.msg_id, null); log?.({ ts: Date.now(), sender: row.sender_jid, skipped: gate.reason }); return true }
+          guardrails?.record(row.sender_jid)
+        }
         if (!question) { reply = `${config.botPrefix} לא הצלחתי לפענח את ההקלטה 🎧`; recordReply(db, row.msg_id, reply) }
       }
 

@@ -111,7 +111,7 @@ if (cmd === 'login') {
   // Single worker: drains the outbox one reply at a time (bounds cost, preserves order).
   async function workerLoop() {
     let did = false
-    try { if (sock) did = await processNext({ sock, db, config, paths, claudePath, sentIds, log }) }
+    try { if (sock) did = await processNext({ sock, db, config, paths, claudePath, sentIds, log, guardrails }) }
     catch (e) { console.error('worker error:', e?.message || e) }
     setTimeout(workerLoop, did ? 0 : config.workerPollMs)
   }
