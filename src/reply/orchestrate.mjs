@@ -223,7 +223,7 @@ export async function processNext(ctx) {
           // Tools: weather always; TV tools only when enabled (owner kill-switch).
           const T = (n) => `mcp__boaz-tools__${n}`
           const tvToolNames = ['list_devices', 'get_focused_app', 'press_key', 'tap', 'launch_app', 'open_url', 'inspect_screen', 'screenshot'].map(T)
-          const mcpTools = [T('get_weather'), ...(config.tvEnabled ? tvToolNames : [])]
+          const mcpTools = [T('get_weather'), T('kg_search'), ...(config.tvEnabled ? tvToolNames : [])]
           const systemAppend = hardening(config, { voice: wantVoice }) + (config.tvEnabled ? '\n\n' + TV_GUARDRAIL : '')
           res = await generateReply({
             prompt: buildPrompt({ context, question, quoted, memory }), config,

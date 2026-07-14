@@ -90,7 +90,7 @@ if (cmd === 'login') {
   try { adbBin = execSync('command -v adb', { shell: '/bin/zsh' }).toString().trim() || adbBin } catch {}
   writeFileSync(TOOLS_CONFIG_PATH, JSON.stringify({ mcpServers: { 'boaz-tools': {
     command: process.execPath, args: [serverPath],
-    env: { TV_HOST: config.tvHost || '', ADB_BIN: adbBin },
+    env: { TV_HOST: config.tvHost || '', ADB_BIN: adbBin, KG_DB: DB_PATH },
   } } }, null, 2))
   if (config.tvEnabled && config.tvHost) { try { execSync(`adb connect ${config.tvHost}`, { stdio: 'ignore' }) } catch {} }
   const claudePath = resolveClaude()

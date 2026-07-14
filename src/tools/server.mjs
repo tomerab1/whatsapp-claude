@@ -6,8 +6,9 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import { tvTools } from './tv.mjs'
 import { weatherTool } from './weather.mjs'
+import { kgTool } from './kg-tool.mjs'
 
-const tools = [...tvTools, weatherTool]
+const tools = [...tvTools, weatherTool, kgTool]
 const byName = new Map(tools.map((t) => [t.name, t]))
 
 const server = new Server({ name: 'boaz-tools', version: '0.1.0' }, { capabilities: { tools: {} } })
