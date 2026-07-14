@@ -182,10 +182,17 @@ export async function processNext(ctx) {
   sock?.sendPresenceUpdate?.('composing', row.chat_jid).catch?.(() => {})
   try {
     let reply = row.reply
+    let wantVoice = !!row.want_voice
     if (reply == null) {
       let question = row.question
       if (row.media_kind === 'voice' && row.media_path) {
         try { question = (await transcribeAudio(row.media_path, { model: config.whisperModel, language: config.whisperLang })) || '' } catch (e) { question = '' }
+        // The voice request ("בהקלטה"/"out loud") lives in the SPOKEN transcript, not the
+        // (empty) message text — so decide voice-mode here, and persist the transcript.
+        if (question) {
+          if (config.voice && voiceRequested(question)) wantVoice = true
+          db.prepare(`UPDATE outbox SET question = ? WHERE msg_id = ?`).run(question, row.msg_id)
+        }
         if (row.want_scan) {
           // Cold voice note: only reply if "בועז" was actually spoken (wake-word + variants).
           const wakeList = [...(config.triggers || []), ...(config.voiceWakeExtra || [])]
@@ -210,7 +217,7 @@ export async function processNext(ctx) {
           const context = wantsCatchup(question) ? catchupContext(db, row.chat_jid, CATCHUP_MSGS) : recentContext(db, row.chat_jid, config.contextMessages)
           const memory = searchHistory(db, row.chat_jid, keywordsFrom(question, config.triggers), { limit: MEMORY_LIMIT, sinceTs: context[0]?.ts ?? null })
           const quoted = row.quoted_id ? getMessageText(db, row.quoted_id) : null
-          res = await generateReply({ prompt: buildPrompt({ context, question, quoted, memory }), config, settingsPath: paths.settingsPath, claudePath, scratchDir: paths.scratchDir, systemAppend: hardening(config, { voice: !!row.want_voice }) })
+          res = await generateReply({ prompt: buildPrompt({ context, question, quoted, memory }), config, settingsPath: paths.settingsPath, claudePath, scratchDir: paths.scratchDir, systemAppend: hardening(config, { voice: wantVoice }) })
         }
         if (!res.ok) { const st = markFailed(db, row.msg_id, config.maxSendAttempts); log?.({ ts: Date.now(), sender: row.sender_jid, error: res.error, status: st }); return true }
         const scan = scanReply(res.text)
@@ -220,7 +227,7 @@ export async function processNext(ctx) {
     }
 
     const quotedMsg = getRawMessage(db, row.msg_id)
-    const sent = await deliver(sock, row.chat_jid, reply, quotedMsg, !!row.want_voice, config, paths, log)
+    const sent = await deliver(sock, row.chat_jid, reply, quotedMsg, wantVoice, config, paths, log)
     if (sent?.key?.id) sentIds.add(sent.key.id)
     markSent(db, row.msg_id, sent?.key?.id)
     log?.({ ts: Date.now(), sender: row.sender_jid, question: row.question, reply, event: 'sent', kind: row.media_kind || 'text' })
