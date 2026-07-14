@@ -13,6 +13,7 @@ export const USAGE_PATH = join(DATA_DIR, 'usage.jsonl')
 export const SCRATCH_DIR = join(DATA_DIR, 'scratch') // empty cwd for claude -p
 export const MEDIA_DIR = join(DATA_DIR, 'media')     // downloaded voice notes / images
 export const PID_PATH = join(DATA_DIR, 'daemon.pid') // running daemon's pid (for reset-cap)
+export const TOOLS_CONFIG_PATH = join(DATA_DIR, 'tools-config.json') // --mcp-config for boaz-tools
 
 export const DEFAULT_CONFIG = {
   groupJid: null,

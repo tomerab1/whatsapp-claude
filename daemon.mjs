@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { downloadMediaMessage } from 'baileys'
 import { connect } from './src/wa/connect.mjs'
 import {
-  loadConfig, saveConfig, DATA_DIR, DB_PATH, SETTINGS_PATH, VISION_SETTINGS_PATH, SCRATCH_DIR, MEDIA_DIR, USAGE_PATH, PID_PATH,
+  loadConfig, saveConfig, DATA_DIR, DB_PATH, SETTINGS_PATH, VISION_SETTINGS_PATH, SCRATCH_DIR, MEDIA_DIR, USAGE_PATH, PID_PATH, TOOLS_CONFIG_PATH,
 } from './src/config.mjs'
 import { openDb, storeMessages } from './src/wa/store.mjs'
 import { createGuardrails } from './src/gate/guardrails.mjs'
@@ -84,6 +84,15 @@ if (cmd === 'login') {
   mkdirSync(DATA_DIR, { recursive: true }); mkdirSync(SCRATCH_DIR, { recursive: true }); mkdirSync(MEDIA_DIR, { recursive: true })
   writeLockedSettings(SETTINGS_PATH, config)
   writeVisionSettings(VISION_SETTINGS_PATH, MEDIA_DIR, config)
+  // boaz-tools MCP config (weather always; TV tools gated by allowlist in orchestrate).
+  const serverPath = new URL('./src/tools/server.mjs', import.meta.url).pathname
+  let adbBin = process.env.ADB_BIN || 'adb'
+  try { adbBin = execSync('command -v adb', { shell: '/bin/zsh' }).toString().trim() || adbBin } catch {}
+  writeFileSync(TOOLS_CONFIG_PATH, JSON.stringify({ mcpServers: { 'boaz-tools': {
+    command: process.execPath, args: [serverPath],
+    env: { TV_HOST: config.tvHost || '', ADB_BIN: adbBin },
+  } } }, null, 2))
+  if (config.tvEnabled && config.tvHost) { try { execSync(`adb connect ${config.tvHost}`, { stdio: 'ignore' }) } catch {} }
   const claudePath = resolveClaude()
   const db = openDb(DB_PATH)
   initOutbox(db); initSpam(db); initMutes(db); initReminders(db)
@@ -93,7 +102,7 @@ if (cmd === 'login') {
   writeFileSync(PID_PATH, String(process.pid)) // so `reset-cap` can signal us
   process.on('SIGUSR2', () => { guardrails.clearHourly(); console.log('group hourly-cap cleared (reset-cap)') })
   const sentIds = new Set()
-  const paths = { settingsPath: SETTINGS_PATH, visionSettingsPath: VISION_SETTINGS_PATH, scratchDir: SCRATCH_DIR, mediaDir: MEDIA_DIR }
+  const paths = { settingsPath: SETTINGS_PATH, visionSettingsPath: VISION_SETTINGS_PATH, scratchDir: SCRATCH_DIR, mediaDir: MEDIA_DIR, toolsConfigPath: TOOLS_CONFIG_PATH }
   const log = (e) => appendUsage(USAGE_PATH, e)
   // Never TRIGGER on backlog / messages WhatsApp replays on reconnect (5s grace).
   const asTs = (t) => (typeof t === 'number' ? t : t?.toNumber ? t.toNumber() : Number(t) || 0)

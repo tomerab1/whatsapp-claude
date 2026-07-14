@@ -3,7 +3,7 @@ import { appendFileSync, mkdirSync } from 'node:fs'
 import { dirname, join, basename } from 'node:path'
 import { recentContext, getMessageText, getRawMessage, extractText } from '../wa/store.mjs'
 import { shouldReply, parseAdminCommand, isBotEcho } from '../gate/trigger.mjs'
-import { buildPrompt, finalizeReply, hardening, sarcasmReply, voiceRequested } from '../reply/compose.mjs'
+import { buildPrompt, finalizeReply, hardening, sarcasmReply, voiceRequested, TV_GUARDRAIL } from '../reply/compose.mjs'
 import { generateReply } from '../reply/sandbox.mjs'
 import { generateVision } from '../media/vision.mjs'
 import { scanReply } from '../reply/scan.mjs'
@@ -163,6 +163,7 @@ async function handleAdmin(ctx, admin, msg) {
       await note(on ? 'online' : 'muted.'); break
     }
     case 'sarcasm': config.sarcasmLevel = admin.level; saveConfig?.(config); await note(`sarcasm = ${admin.level}`); break
+    case 'tv': config.tvEnabled = admin.on; saveConfig?.(config); await note(admin.on ? 'שולט בטלוויזיה עכשיו 📺' : 'שליטת הטלוויזיה כבויה'); break
     case 'mute': setMute(db, admin.target, Date.now() + admin.durationSec * 1000); await note(`הושתק ל-${Math.round(admin.durationSec / 60)} דק׳`); break
     case 'unmute': clearMute(db, admin.target); await note('בוטלה ההשתקה'); break
     case 'stats': {
@@ -217,7 +218,16 @@ export async function processNext(ctx) {
           const context = wantsCatchup(question) ? catchupContext(db, row.chat_jid, CATCHUP_MSGS) : recentContext(db, row.chat_jid, config.contextMessages)
           const memory = searchHistory(db, row.chat_jid, keywordsFrom(question, config.triggers), { limit: MEMORY_LIMIT, sinceTs: context[0]?.ts ?? null })
           const quoted = row.quoted_id ? getMessageText(db, row.quoted_id) : null
-          res = await generateReply({ prompt: buildPrompt({ context, question, quoted, memory }), config, settingsPath: paths.settingsPath, claudePath, scratchDir: paths.scratchDir, systemAppend: hardening(config, { voice: wantVoice }) })
+          // Tools: weather always; TV tools only when enabled (owner kill-switch).
+          const T = (n) => `mcp__boaz-tools__${n}`
+          const tvToolNames = ['list_devices', 'get_focused_app', 'press_key', 'tap', 'launch_app', 'open_url', 'inspect_screen', 'screenshot'].map(T)
+          const mcpTools = [T('get_weather'), ...(config.tvEnabled ? tvToolNames : [])]
+          const systemAppend = hardening(config, { voice: wantVoice }) + (config.tvEnabled ? '\n\n' + TV_GUARDRAIL : '')
+          res = await generateReply({
+            prompt: buildPrompt({ context, question, quoted, memory }), config,
+            settingsPath: paths.settingsPath, claudePath, scratchDir: paths.scratchDir, systemAppend,
+            mcpConfigPath: paths.toolsConfigPath, mcpTools, maxTurns: config.tvMaxTurns,
+          })
         }
         if (!res.ok) { const st = markFailed(db, row.msg_id, config.maxSendAttempts); log?.({ ts: Date.now(), sender: row.sender_jid, error: res.error, status: st }); return true }
         const scan = scanReply(res.text)
