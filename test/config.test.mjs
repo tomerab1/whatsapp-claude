@@ -25,6 +25,9 @@ test('DEFAULT_CONFIG has the required knobs with sane defaults', () => {
   assert.equal(DEFAULT_CONFIG.voiceMaxSec, 60)
   assert.equal(DEFAULT_CONFIG.whisperModel, 'small')
   assert.equal(DEFAULT_CONFIG.whisperLang, 'he')
+  assert.equal(DEFAULT_CONFIG.tvEnabled, false)
+  assert.equal(DEFAULT_CONFIG.tvHost, null)
+  assert.equal(DEFAULT_CONFIG.tvMaxTurns, 12)
 })
 
 test('mergeConfig overlays file values but keeps unspecified defaults', () => {

@@ -69,3 +69,10 @@ test('parseAdminCommand: on/off/stats/sarcasm/mute/unmute, owner only', () => {
   assert.equal(parseAdminCommand('@boaz mute', ctx()), null)          // no target
   assert.equal(parseAdminCommand('@boaz off', ctx({ senderJid: 's@x' })), null) // not owner
 })
+
+test('parseAdminCommand handles tv on/off (owner only)', () => {
+  const ctx = (o) => ({ senderJid: 'owner@x', ownerJid: 'owner@x', triggers: TRIGGERS, ...o })
+  assert.deepEqual(parseAdminCommand('@boaz tv on', ctx()), { cmd: 'tv', on: true })
+  assert.deepEqual(parseAdminCommand('@בועז tv off', ctx()), { cmd: 'tv', on: false })
+  assert.equal(parseAdminCommand('@boaz tv on', ctx({ senderJid: 's@x' })), null) // not owner
+})

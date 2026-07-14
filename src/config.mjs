@@ -38,6 +38,9 @@ export const DEFAULT_CONFIG = {
   vision: true,            // allow image understanding on @boaz-captioned images
   voiceWakeword: true,     // transcribe any voice note (local/free) + reply if "בועז" is spoken
   voiceMaxSec: 60,         // don't wake-scan voice notes longer than this (bounds CPU)
+  tvEnabled: false,        // owner opt-in; while true, anyone can make Boaz drive the TV
+  tvHost: null,            // "192.168.x.x:5555" — the TV's ADB endpoint
+  tvMaxTurns: 12,          // cap the TV tool-use loop (bounds cost)
   whisperModel: 'small',   // 'small' handles Hebrew far better than 'base' (still local/free)
   whisperLang: 'he',       // pin Hebrew so a clip isn't mis-detected as Arabic ('auto' to detect)
   voiceWakeExtra: ['בועס', 'בוז', 'boas', 'בועאז'], // common mis-transcriptions of "בועז"

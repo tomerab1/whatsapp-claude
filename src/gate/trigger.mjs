@@ -69,6 +69,9 @@ export function parseAdminCommand(text, ctx) {
   if (re('off').test(t)) return { cmd: 'off' }
   if (re('stats').test(t)) return { cmd: 'stats' }
 
+  let mtv
+  if ((mtv = t.match(re('(?:tv)\\s+(on|off)')))) return { cmd: 'tv', on: mtv[1].toLowerCase() === 'on' }
+
   let m
   if ((m = t.match(re('(?:sarcasm|סרקזם)\\s+(\\S+)')))) {
     const v = m[1].toLowerCase()
