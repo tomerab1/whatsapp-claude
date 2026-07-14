@@ -28,27 +28,27 @@ export function scrubEnv(env) {
   return out
 }
 
-export function buildClaudeArgs({ config, settingsPath, systemAppend }) {
+export function buildClaudeArgs({ config, settingsPath, systemAppend, mcpConfigPath, mcpTools = [] }) {
   const allowed = config.allowWebFetch ? ['WebSearch', 'WebFetch'] : ['WebSearch']
   const disallowed = config.allowWebFetch ? DENY_TOOLS.filter((t) => t !== 'WebFetch') : [...DENY_TOOLS]
-  return [
-    '-p',
-    '--model', config.model,
-    '--settings', settingsPath,
-    '--strict-mcp-config', // + no --mcp-config ⇒ zero MCP servers
+  const args = ['-p', '--model', config.model, '--settings', settingsPath, '--strict-mcp-config']
+  if (mcpConfigPath) args.push('--mcp-config', mcpConfigPath) // + strict ⇒ ONLY this server loads
+  args.push(
     '--append-system-prompt', systemAppend,
-    '--allowedTools', ...allowed,
+    '--allowedTools', ...allowed, ...mcpTools, // mcpTools gate which MCP tools may be called
     '--disallowedTools', ...disallowed,
     '--output-format', 'text',
-  ]
+  )
+  return args
 }
 
 export function writeLockedSettings(settingsPath, config) {
   writeFileSync(settingsPath, JSON.stringify(buildLockedSettings(config), null, 2) + '\n')
 }
 
-export function generateReply({ prompt, config, settingsPath, claudePath, scratchDir, systemAppend }) {
-  const args = buildClaudeArgs({ config, settingsPath, systemAppend })
+export function generateReply({ prompt, config, settingsPath, claudePath, scratchDir, systemAppend, mcpConfigPath, mcpTools, maxTurns }) {
+  const args = buildClaudeArgs({ config, settingsPath, systemAppend, mcpConfigPath, mcpTools })
+  if (maxTurns) args.push('--max-turns', String(maxTurns))
   return new Promise((resolve) => {
     const child = spawn(claudePath, args, {
       cwd: scratchDir,               // empty dir: a stray glob finds nothing

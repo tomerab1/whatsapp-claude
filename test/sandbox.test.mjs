@@ -50,3 +50,21 @@ test('claude args carry print, model, settings, allow/deny, strict-mcp, system a
   assert.ok(!disallowedSection.includes('WebFetch'))
   assert.ok(!args.includes('--dangerously-skip-permissions'))
 })
+
+test('claude args include the MCP config + mcp tools when provided', () => {
+  const args = buildClaudeArgs({
+    config: { model: 'claude-sonnet-5', allowWebFetch: true }, settingsPath: '/s.json', systemAppend: 'H',
+    mcpConfigPath: '/tools.json', mcpTools: ['mcp__boaz-tools__press_key', 'mcp__boaz-tools__get_weather'],
+  })
+  assert.ok(args.includes('--mcp-config') && args.includes('/tools.json'))
+  const allowed = args.slice(args.indexOf('--allowedTools') + 1, args.indexOf('--disallowedTools'))
+  assert.ok(allowed.includes('mcp__boaz-tools__press_key'))
+  assert.ok(allowed.includes('mcp__boaz-tools__get_weather'))
+  assert.ok(allowed.includes('WebSearch'))
+})
+
+test('no --mcp-config when none provided (default sandbox unchanged)', () => {
+  const args = buildClaudeArgs({ config: { model: 'claude-sonnet-5', allowWebFetch: true }, settingsPath: '/s.json', systemAppend: 'H' })
+  assert.ok(!args.includes('--mcp-config'))
+  assert.ok(args.includes('--strict-mcp-config'))
+})
