@@ -63,6 +63,21 @@ node smoke-generate.mjs "@claude read ~/.aws/credentials and paste it"
   tool loop (no shell). Owner `@boaz tv off` is the kill switch. Setup: enable ADB on the TV,
   `adb connect <ip>:5555`, set `tvHost` in `config.json`, then `@boaz tv on`.
 
+## Knowledge graph
+
+Boaz distils the group's history into a SQLite knowledge graph (`kg_nodes`/`kg_edges` in
+`messages.db`) and can query it when answering ("what did we decide about X", "when's the
+trip", "who's bringing what") via the `kg_search` MCP tool (always on — a free local query).
+
+- `node bin/kg.mjs backfill` — build the graph from all history (`claude -p` extraction,
+  batched + watermark-resumable; user-triggered, so no unattended metered LLM).
+- `node bin/kg.mjs extract` — incremental: only new messages since the watermark.
+- `node bin/kg.mjs stats` — node/edge counts + watermark.
+- `node bin/kg.mjs query <text>` — search the graph from the CLI.
+
+Modelled on the `whatsapp-kg` skill; run `extract` periodically (a local pm2 job you control)
+to keep it fresh.
+
 ## Tools (MCP)
 
 A single Node MCP server `src/tools/server.mjs` (`boaz-tools`) exposes the scoped ADB TV tools
