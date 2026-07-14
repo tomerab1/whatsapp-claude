@@ -36,16 +36,18 @@ export function pickModel(opts = {}) {
   return opts.model || process.env.WHISPER_MODEL || DEFAULT_MODEL
 }
 
-// Pure, testable args builder for the whisper CLI.
-export function whisperArgs(audioPath, outDir, model) {
-  return [
+// Pure, testable args builder for the whisper CLI. When `language` is given (e.g. 'he'),
+// pin it — otherwise whisper auto-detects and can mis-guess a Hebrew clip as Arabic.
+export function whisperArgs(audioPath, outDir, model, language) {
+  const args = [
     audioPath,
     '--model', model,
     '--output_format', OUTPUT_FORMAT,
     '--output_dir', outDir,
     '--fp16', 'False',            // CPU/mac: no half precision
-    // no --language ⇒ whisper auto-detects (Hebrew or English)
   ]
+  if (language && language !== 'auto') args.push('--language', language)
+  return args
 }
 
 // whisper names its output after the audio file's stem: foo.ogg → foo.txt.
@@ -77,9 +79,10 @@ export async function transcribeAudio(audioPath, opts = {}) {
   }
   const bin = resolveWhisper()
   const model = pickModel(opts)
+  const language = opts.language || process.env.WHISPER_LANG || null
   const outDir = mkdtempSync(join(tmpdir(), 'boaz-stt-'))
   try {
-    const { code, err } = await runWhisper(bin, whisperArgs(audioPath, outDir, model))
+    const { code, err } = await runWhisper(bin, whisperArgs(audioPath, outDir, model, language))
     if (code !== 0) throw new Error(`whisper failed (exit ${code}): ${(err || '').trim().slice(0, 500)}`)
     const txtPath = transcriptPath(outDir, audioPath)
     if (!existsSync(txtPath)) throw new Error(`whisper produced no transcript at ${txtPath}`)

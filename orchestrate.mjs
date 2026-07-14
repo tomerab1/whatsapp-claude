@@ -185,10 +185,11 @@ export async function processNext(ctx) {
     if (reply == null) {
       let question = row.question
       if (row.media_kind === 'voice' && row.media_path) {
-        try { question = (await transcribeAudio(row.media_path)) || '' } catch (e) { question = '' }
+        try { question = (await transcribeAudio(row.media_path, { model: config.whisperModel, language: config.whisperLang })) || '' } catch (e) { question = '' }
         if (row.want_scan) {
-          // Cold voice note: only reply if "בועז" was actually spoken (wake-word).
-          if (!question || !hasWakeWord(question, config.triggers)) {
+          // Cold voice note: only reply if "בועז" was actually spoken (wake-word + variants).
+          const wakeList = [...(config.triggers || []), ...(config.voiceWakeExtra || [])]
+          if (!question || !hasWakeWord(question, wakeList)) {
             markSent(db, row.msg_id, null)
             log?.({ ts: Date.now(), sender: row.sender_jid, event: 'voice-no-wake', transcript: (question || '').slice(0, 60) })
             return true
