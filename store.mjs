@@ -84,3 +84,10 @@ export function getMessageText(db, id) {
   const row = db.prepare(`SELECT sender_name, text FROM messages WHERE id = ?`).get(id)
   return row || null
 }
+
+// The full stored Baileys message object (for quoting a reply). Null if unknown.
+export function getRawMessage(db, id) {
+  const row = db.prepare(`SELECT raw FROM messages WHERE id = ?`).get(id)
+  if (!row?.raw) return null
+  try { return JSON.parse(row.raw) } catch { return null }
+}

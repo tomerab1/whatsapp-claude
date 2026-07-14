@@ -14,17 +14,20 @@ export const SCRATCH_DIR = join(DATA_DIR, 'scratch') // empty cwd for claude -p
 export const DEFAULT_CONFIG = {
   groupJid: null,
   groupName: null,
-  ownerJid: null,          // set at `set` time; used for owner-only @claude on/off
+  ownerJid: null,          // set at `set` time; used for owner-only @boaz on/off
   enabled: true,
   botPrefix: '🤖',
-  triggers: ['@claude', '@קלוד'],
+  botName: 'Boaz',
+  triggers: ['@boaz', '@בועז'],
   model: 'claude-sonnet-5',
   allowWebFetch: true,
-  perUserCooldownSec: 20,
+  perUserCooldownSec: 10,
   hourlyCap: 30,
   maxReplyChars: 1500,
   contextMessages: 20,
   claudeTimeoutSec: 60,
+  workerPollMs: 700,       // how often the outbox worker checks for queued work
+  maxSendAttempts: 3,      // outbox delivery retries before a row is marked failed
 }
 
 export function mergeConfig(fileCfg) {

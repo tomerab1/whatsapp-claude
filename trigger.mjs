@@ -16,9 +16,15 @@ export function shouldReply({ text, id, botPrefix, triggers, sentIds }) {
   return matchesTrigger(text, triggers)
 }
 
-// Recognizes exactly "@claude on" / "@claude off" (any trigger word), owner only.
-export function parseOwnerCommand(text, senderJid, ownerJid) {
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+// Recognizes "<trigger> on" / "<trigger> off" for any configured trigger word,
+// owner only. Derived from `triggers` so a rename needs no code change here.
+export function parseOwnerCommand(text, senderJid, ownerJid, triggers) {
   if (!ownerJid || senderJid !== ownerJid) return null
-  const m = (text || '').trim().toLowerCase().match(/^@(?:claude|קלוד)\s+(on|off)$/)
-  return m ? m[1] : null
+  const words = (triggers || []).map((t) => escapeRe(t.replace(/^@/, ''))).filter(Boolean)
+  if (!words.length) return null
+  const re = new RegExp(`^@(?:${words.join('|')})\\s+(on|off)$`, 'i')
+  const m = (text || '').trim().match(re)
+  return m ? m[1].toLowerCase() : null
 }

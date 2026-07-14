@@ -1,11 +1,14 @@
-// guardrails.mjs — bounds unattended, other-driven LLM cost.
+// guardrails.mjs — admission control for the outbox queue. Bounds unattended,
+// other-driven LLM cost. Concurrency is handled by the single outbox worker, so
+// there is no "busy" state here anymore: a tag that arrives mid-answer is queued,
+// not dropped. These limits only drop true spam (per-user cooldown) and runaway
+// cost (global hourly cap).
 const HOUR_MS = 3_600_000
 
 export function createGuardrails(config, now = () => Date.now()) {
   let enabled = config.enabled
-  let inFlight = false
-  const lastBySender = new Map() // senderJid -> ts of last allowed trigger
-  let hourWindow = []            // ts of recent allowed triggers (trailing hour)
+  const lastBySender = new Map() // senderJid -> ts of last ADMITTED trigger
+  let hourWindow = []            // ts of recent admitted triggers (trailing hour)
   const cooldownMs = config.perUserCooldownSec * 1000
 
   const prune = (t) => { hourWindow = hourWindow.filter((x) => t - x < HOUR_MS) }
@@ -13,7 +16,6 @@ export function createGuardrails(config, now = () => Date.now()) {
   return {
     check(senderJid) {
       if (!enabled) return { allowed: false, reason: 'disabled' }
-      if (inFlight) return { allowed: false, reason: 'busy' }
       const t = now()
       prune(t)
       if (hourWindow.length >= config.hourlyCap) return { allowed: false, reason: 'hourly-cap' }
@@ -21,13 +23,12 @@ export function createGuardrails(config, now = () => Date.now()) {
       if (last != null && t - last < cooldownMs) return { allowed: false, reason: 'cooldown' }
       return { allowed: true, reason: null }
     },
-    begin(senderJid) {
+    // Call only after an allowed check, when the request is actually admitted (enqueued).
+    record(senderJid) {
       const t = now()
-      inFlight = true
       lastBySender.set(senderJid, t)
       hourWindow.push(t)
     },
-    end() { inFlight = false },
     setEnabled(v) { enabled = !!v },
   }
 }

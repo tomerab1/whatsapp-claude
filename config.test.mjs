@@ -5,14 +5,17 @@ import { DEFAULT_CONFIG, mergeConfig } from './config.mjs'
 test('DEFAULT_CONFIG has the required knobs with sane defaults', () => {
   assert.equal(DEFAULT_CONFIG.enabled, true)
   assert.equal(DEFAULT_CONFIG.botPrefix, '🤖')
-  assert.deepEqual(DEFAULT_CONFIG.triggers, ['@claude', '@קלוד'])
+  assert.equal(DEFAULT_CONFIG.botName, 'Boaz')
+  assert.deepEqual(DEFAULT_CONFIG.triggers, ['@boaz', '@בועז'])
   assert.equal(DEFAULT_CONFIG.model, 'claude-sonnet-5')
   assert.equal(DEFAULT_CONFIG.allowWebFetch, true)
-  assert.equal(DEFAULT_CONFIG.perUserCooldownSec, 20)
+  assert.equal(DEFAULT_CONFIG.perUserCooldownSec, 10)
   assert.equal(DEFAULT_CONFIG.hourlyCap, 30)
   assert.equal(DEFAULT_CONFIG.maxReplyChars, 1500)
   assert.equal(DEFAULT_CONFIG.contextMessages, 20)
   assert.equal(DEFAULT_CONFIG.claudeTimeoutSec, 60)
+  assert.equal(DEFAULT_CONFIG.workerPollMs, 700)
+  assert.equal(DEFAULT_CONFIG.maxSendAttempts, 3)
 })
 
 test('mergeConfig overlays file values but keeps unspecified defaults', () => {
