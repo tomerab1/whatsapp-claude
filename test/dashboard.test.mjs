@@ -4,7 +4,7 @@ import Database from 'better-sqlite3'
 import {
   percentile, mean, responseTimes, shortJid, displayName, truncate, escapeHtml,
   collectStats, renderHtml, readUsageLines,
-} from './dashboard.mjs'
+} from '../src/dashboard.mjs'
 
 // A fresh in-memory db with the three tables the skill uses.
 function freshDb() {

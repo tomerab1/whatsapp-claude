@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { createGuardrails } from './guardrails.mjs'
+import { createGuardrails } from '../src/gate/guardrails.mjs'
 
 const cfg = { enabled: true, perUserCooldownSec: 10, hourlyCap: 3 }
 

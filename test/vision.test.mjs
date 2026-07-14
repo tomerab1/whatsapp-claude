@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { buildVisionSettings, buildVisionArgs } from './vision.mjs'
+import { buildVisionSettings, buildVisionArgs } from '../src/media/vision.mjs'
 
 test('vision settings scope Read to the media dir and deny the dangerous tools', () => {
   const s = buildVisionSettings('/tmp/media', { allowWebFetch: true })

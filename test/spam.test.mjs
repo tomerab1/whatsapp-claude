@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import Database from 'better-sqlite3'
-import { initSpam, noteSpam } from './spam.mjs'
+import { initSpam, noteSpam } from '../src/gate/spam.mjs'
 
 const db0 = () => initSpam(new Database(':memory:'))
 const COOLDOWN = 10_000

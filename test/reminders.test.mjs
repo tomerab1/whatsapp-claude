@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import Database from 'better-sqlite3'
-import { initReminders, parseReminder, addReminder, dueReminders, markReminderSent } from './reminders.mjs'
+import { initReminders, parseReminder, addReminder, dueReminders, markReminderSent } from '../src/recall/reminders.mjs'
 
 const TRIGGERS = ['@boaz', '@בועז']
 

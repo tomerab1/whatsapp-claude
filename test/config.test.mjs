@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { DEFAULT_CONFIG, mergeConfig } from './config.mjs'
+import { DEFAULT_CONFIG, mergeConfig } from '../src/config.mjs'
 
 test('DEFAULT_CONFIG has the required knobs with sane defaults', () => {
   assert.equal(DEFAULT_CONFIG.enabled, true)

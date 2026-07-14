@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { buildLockedSettings, scrubEnv, buildClaudeArgs, DENY_TOOLS } from './sandbox.mjs'
+import { buildLockedSettings, scrubEnv, buildClaudeArgs, DENY_TOOLS } from '../src/reply/sandbox.mjs'
 
 test('locked settings allow only web tools and deny the dangerous ones', () => {
   const s = buildLockedSettings({ allowWebFetch: true })

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { hardening, buildPrompt, finalizeReply, SARCASM, sarcasmReply, voiceRequested } from './compose.mjs'
+import { hardening, buildPrompt, finalizeReply, SARCASM, sarcasmReply, voiceRequested } from '../src/reply/compose.mjs'
 
 const cfg = { botPrefix: '🤖', botName: 'Boaz', triggers: ['@boaz', '@בועז'], maxReplyChars: 1500 }
 

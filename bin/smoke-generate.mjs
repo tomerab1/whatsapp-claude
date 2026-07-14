@@ -2,9 +2,9 @@
 // Usage: node smoke-generate.mjs "your question here"
 import { mkdirSync } from 'node:fs'
 import { execSync } from 'node:child_process'
-import { loadConfig, SETTINGS_PATH, SCRATCH_DIR } from './config.mjs'
-import { writeLockedSettings, generateReply } from './sandbox.mjs'
-import { buildPrompt, finalizeReply, hardening } from './compose.mjs'
+import { loadConfig, SETTINGS_PATH, SCRATCH_DIR } from '../src/config.mjs'
+import { writeLockedSettings, generateReply } from '../src/reply/sandbox.mjs'
+import { buildPrompt, finalizeReply, hardening } from '../src/reply/compose.mjs'
 
 const config = loadConfig()
 mkdirSync(SCRATCH_DIR, { recursive: true })

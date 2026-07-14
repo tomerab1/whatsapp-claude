@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   POLL_KEYWORDS, MAX_OPTIONS, parsePollCommand, extractPollFromReply, buildPollMessage,
-} from './poll.mjs'
+} from '../src/poll.mjs'
 
 const TRIGGERS = ['@boaz', '@בועז']
 

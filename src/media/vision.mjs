@@ -4,7 +4,7 @@
 // unlisted path isn't approved, and headless mode denies unapproved tool uses).
 import { writeFileSync } from 'node:fs'
 import { spawn } from 'node:child_process'
-import { scrubEnv } from './sandbox.mjs'
+import { scrubEnv } from '../reply/sandbox.mjs'
 
 const VISION_DENY = ['Bash', 'Write', 'Edit', 'MultiEdit', 'NotebookEdit', 'Glob', 'Grep', 'Task', 'WebFetch']
 

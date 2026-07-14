@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import Database from 'better-sqlite3'
-import { wantsCatchup, catchupContext, keywordsFrom, searchHistory } from './memory.mjs'
+import { wantsCatchup, catchupContext, keywordsFrom, searchHistory } from '../src/recall/memory.mjs'
 
 const JID = 'g@g.us'
 function seed() {

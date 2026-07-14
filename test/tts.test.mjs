@@ -13,7 +13,7 @@ import {
   VENV_PYTHON,
   LANG_HEBREW,
   LANG_ENGLISH,
-} from './tts.mjs'
+} from '../src/media/tts.mjs'
 
 test('ttsLang picks Hebrew for Hebrew text, English otherwise, and Hebrew when mixed', () => {
   assert.equal(LANG_HEBREW, 'iw') // gTTS uses the legacy ISO code for Hebrew

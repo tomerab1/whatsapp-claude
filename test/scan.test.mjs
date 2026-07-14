@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { scanReply } from './scan.mjs'
+import { scanReply } from '../src/reply/scan.mjs'
 
 test('clean replies pass', () => {
   assert.deepEqual(scanReply('The capital of France is Paris.'), { safe: true, matches: [] })

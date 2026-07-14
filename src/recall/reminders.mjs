@@ -1,5 +1,5 @@
 // reminders.mjs — "@בועז תזכיר לכולם בעוד שעה ש..." → Boaz posts it when it's due.
-import { parseDuration } from './trigger.mjs'
+import { parseDuration } from '../gate/trigger.mjs'
 const now0 = () => Date.now()
 
 export function initReminders(db) {

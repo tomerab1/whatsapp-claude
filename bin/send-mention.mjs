@@ -3,8 +3,8 @@
 // replaced with @<id> so WhatsApp renders it as that member's name.
 // Guard: refuses any jid that isn't config.groupJid.
 // Usage: node send-mention.mjs "<jid>" "<template with {i}>" <mentionJid> [<mentionJid> …]
-import { connect } from './connect.mjs'
-import { loadConfig } from './config.mjs'
+import { connect } from '../src/wa/connect.mjs'
+import { loadConfig } from '../src/config.mjs'
 
 const config = loadConfig()
 const jid = process.argv[2]

@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import Database from 'better-sqlite3'
-import { initMutes, setMute, clearMute, isMuted } from './mute.mjs'
+import { initMutes, setMute, clearMute, isMuted } from '../src/gate/mute.mjs'
 
 const db0 = () => initMutes(new Database(':memory:'))
 

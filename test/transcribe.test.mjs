@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   whisperArgs, resolveWhisper, transcribeAudio, pickModel, DEFAULT_MODEL,
-} from './transcribe.mjs'
+} from '../src/media/transcribe.mjs'
 
 const SAY_PHRASE = 'testing whisper transcription one two three' // clear English for a loose check
 

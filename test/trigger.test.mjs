@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { matchesTrigger, isBotEcho, isAck, shouldReply, parseOwnerCommand, parseAdminCommand, parseDuration } from './trigger.mjs'
+import { matchesTrigger, isBotEcho, isAck, shouldReply, parseOwnerCommand, parseAdminCommand, parseDuration } from '../src/gate/trigger.mjs'
 
 const TRIGGERS = ['@boaz', '@בועז']
 

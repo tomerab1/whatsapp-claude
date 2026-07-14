@@ -2,8 +2,8 @@
 // Guard: refuses any jid that isn't config.groupJid (so it can only ever hit the
 // group this install is set to — never some other group).
 // Usage: node send-once.mjs "<jid>" "<text>"
-import { connect } from './connect.mjs'
-import { loadConfig } from './config.mjs'
+import { connect } from '../src/wa/connect.mjs'
+import { loadConfig } from '../src/config.mjs'
 
 const config = loadConfig()
 const jid = process.argv[2]

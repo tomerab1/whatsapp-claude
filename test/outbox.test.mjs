@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import Database from 'better-sqlite3'
 import {
   initOutbox, enqueue, claimNext, recordReply, markSent, markFailed, recover, pendingCount, statusCounts,
-} from './outbox.mjs'
+} from '../src/queue/outbox.mjs'
 
 const db0 = () => initOutbox(new Database(':memory:'))
 const row = (id, q) => ({ msgId: id, chatJid: 'g@g.us', senderJid: 's@x', senderName: 'S', question: q, quotedId: null })

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { openDb, storeMessages, recentContext, getMessageText, extractText } from './store.mjs'
+import { openDb, storeMessages, recentContext, getMessageText, extractText } from '../src/wa/store.mjs'
 
 const JID = 'group@g.us'
 const mk = (id, ts, text) => ({

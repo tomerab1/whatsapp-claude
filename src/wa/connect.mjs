@@ -5,7 +5,7 @@ import makeWASocket, {
 import qrcode from 'qrcode-terminal'
 import P from 'pino'
 import { mkdirSync } from 'node:fs'
-import { AUTH_DIR } from './config.mjs'
+import { AUTH_DIR } from '../config.mjs'
 
 async function getVersion() {
   try { return (await fetchLatestWaWebVersion({})).version }
