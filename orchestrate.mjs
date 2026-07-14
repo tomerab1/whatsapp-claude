@@ -164,7 +164,7 @@ export async function processNext(ctx) {
           const context = wantsCatchup(question) ? catchupContext(db, row.chat_jid, CATCHUP_MSGS) : recentContext(db, row.chat_jid, config.contextMessages)
           const memory = searchHistory(db, row.chat_jid, keywordsFrom(question, config.triggers), { limit: MEMORY_LIMIT, sinceTs: context[0]?.ts ?? null })
           const quoted = row.quoted_id ? getMessageText(db, row.quoted_id) : null
-          res = await generateReply({ prompt: buildPrompt({ context, question, quoted, memory }), config, settingsPath: paths.settingsPath, claudePath, scratchDir: paths.scratchDir, systemAppend: hardening(config) })
+          res = await generateReply({ prompt: buildPrompt({ context, question, quoted, memory }), config, settingsPath: paths.settingsPath, claudePath, scratchDir: paths.scratchDir, systemAppend: hardening(config, { voice: !!row.want_voice }) })
         }
         if (!res.ok) { const st = markFailed(db, row.msg_id, config.maxSendAttempts); log?.({ ts: Date.now(), sender: row.sender_jid, error: res.error, status: st }); return true }
         const scan = scanReply(res.text)
@@ -174,7 +174,7 @@ export async function processNext(ctx) {
     }
 
     const quotedMsg = getRawMessage(db, row.msg_id)
-    const sent = await deliver(sock, row.chat_jid, reply, quotedMsg, !!row.want_voice, config, paths)
+    const sent = await deliver(sock, row.chat_jid, reply, quotedMsg, !!row.want_voice, config, paths, log)
     if (sent?.key?.id) sentIds.add(sent.key.id)
     markSent(db, row.msg_id, sent?.key?.id)
     log?.({ ts: Date.now(), sender: row.sender_jid, question: row.question, reply, event: 'sent', kind: row.media_kind || 'text' })
@@ -187,14 +187,17 @@ export async function processNext(ctx) {
   return true
 }
 
-async function deliver(sock, jid, reply, quotedMsg, wantVoice, config, paths) {
+async function deliver(sock, jid, reply, quotedMsg, wantVoice, config, paths, log) {
+  const quoted = quotedMsg ? { quoted: quotedMsg } : {}
   if (wantVoice && config.voice) {
     try {
       const spoken = reply.startsWith(config.botPrefix) ? reply.slice(config.botPrefix.length).trim() : reply
       const outPath = join(paths.mediaDir, `tts-${Date.now()}.ogg`)
       await synthesizeVoice(spoken, outPath)
-      return sock.sendMessage(jid, { audio: { url: outPath }, ptt: true, mimetype: 'audio/ogg; codecs=opus' }, quotedMsg ? { quoted: quotedMsg } : {})
-    } catch (e) { /* fall back to text */ }
+      const sent = await sock.sendMessage(jid, { audio: { url: outPath }, ptt: true, mimetype: 'audio/ogg; codecs=opus' }, quoted)
+      log?.({ ts: Date.now(), event: 'voice-sent' })
+      return sent
+    } catch (e) { log?.({ ts: Date.now(), event: 'voice-fallback', error: e?.message || String(e) }) }
   }
-  return sock.sendMessage(jid, { text: reply }, quotedMsg ? { quoted: quotedMsg } : {})
+  return sock.sendMessage(jid, { text: reply }, quoted)
 }
