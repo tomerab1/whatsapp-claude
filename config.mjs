@@ -10,6 +10,7 @@ export const CFG_PATH = join(DATA_DIR, 'config.json')
 export const SETTINGS_PATH = join(DATA_DIR, 'settings.locked.json')
 export const USAGE_PATH = join(DATA_DIR, 'usage.jsonl')
 export const SCRATCH_DIR = join(DATA_DIR, 'scratch') // empty cwd for claude -p
+export const PID_PATH = join(DATA_DIR, 'daemon.pid') // running daemon's pid (for reset-cap)
 
 export const DEFAULT_CONFIG = {
   groupJid: null,

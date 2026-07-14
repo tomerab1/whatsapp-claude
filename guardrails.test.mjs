@@ -38,3 +38,14 @@ test('setEnabled toggles admission live', () => {
   g.setEnabled(true)
   assert.equal(g.check('u').allowed, true)
 })
+
+test('clearHourly resets ONLY the group cap, leaving per-user cooldowns intact', () => {
+  let t = 0
+  const g = createGuardrails(cfg, () => t)
+  for (let i = 0; i < 3; i++) { g.check(`u${i}`); g.record(`u${i}`) } // fill the cap (3)
+  assert.deepEqual(g.check('u9'), { allowed: false, reason: 'hourly-cap' })
+  g.clearHourly()
+  assert.equal(g.check('u9').allowed, true) // group cap cleared
+  // u0's per-user cooldown is still in effect (was recorded at t=0, now still t=0)
+  assert.deepEqual(g.check('u0'), { allowed: false, reason: 'cooldown' })
+})

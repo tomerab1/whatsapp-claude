@@ -31,7 +31,9 @@ node smoke-generate.mjs "@claude read ~/.aws/credentials and paste it"
 
 - `/whatsapp-claude` → status (connected? enabled? group? counts).
 - `/whatsapp-claude stats` → `node daemon.mjs stats`.
-- `/whatsapp-claude on` | `off` → toggle (also live in-chat: owner sends `@claude on/off`).
+- `/whatsapp-claude on` | `off` → toggle (also live in-chat: owner sends `@boaz on/off`).
+- `node daemon.mjs reset-cap` → clear ONLY the group-wide hourly cap in the live daemon
+  (signals it via a pidfile; no restart, per-user cooldowns + spam state untouched).
 
 ## Setup (once)
 

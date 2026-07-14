@@ -30,5 +30,7 @@ export function createGuardrails(config, now = () => Date.now()) {
       hourWindow.push(t)
     },
     setEnabled(v) { enabled = !!v },
+    // Reset ONLY the group-wide hourly cap. Per-user cooldowns are left intact.
+    clearHourly() { hourWindow = [] },
   }
 }

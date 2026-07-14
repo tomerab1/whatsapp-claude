@@ -2,8 +2,9 @@
 import { execSync } from 'node:child_process'
 import { mkdirSync, existsSync, readFileSync } from 'node:fs'
 import { connect } from './connect.mjs'
+import { writeFileSync } from 'node:fs'
 import {
-  loadConfig, saveConfig, DATA_DIR, DB_PATH, SETTINGS_PATH, SCRATCH_DIR, USAGE_PATH,
+  loadConfig, saveConfig, DATA_DIR, DB_PATH, SETTINGS_PATH, SCRATCH_DIR, USAGE_PATH, PID_PATH,
 } from './config.mjs'
 import { openDb, storeMessages } from './store.mjs'
 import { createGuardrails } from './guardrails.mjs'
@@ -56,6 +57,18 @@ if (cmd === 'login') {
     console.log(`outbox:         ${JSON.stringify(statusCounts(db))} | pending: ${pendingCount(db)}`)
   }
   process.exit(0)
+} else if (cmd === 'reset-cap') {
+  // Clear ONLY the group-wide hourly cap in the LIVE daemon — no restart, cooldowns/spam intact.
+  if (!existsSync(PID_PATH)) { console.error('daemon not running (no pidfile); the cap clears itself on next start.'); process.exit(1) }
+  const pid = Number(readFileSync(PID_PATH, 'utf8').trim())
+  try {
+    process.kill(pid, 'SIGUSR2')
+    console.log(`reset-cap → signaled daemon pid ${pid}: group hourly cap cleared (cooldowns + spam untouched).`)
+  } catch (e) {
+    console.error(e.code === 'ESRCH' ? `stale pidfile: pid ${pid} isn't running — start the daemon first.` : `reset-cap failed: ${e.message}`)
+    process.exit(1)
+  }
+  process.exit(0)
 } else if (cmd === 'start') {
   if (!config.groupJid) { console.error('no target group — run groups then set first.'); process.exit(1) }
   mkdirSync(DATA_DIR, { recursive: true }); mkdirSync(SCRATCH_DIR, { recursive: true })
@@ -66,6 +79,8 @@ if (cmd === 'login') {
   const requeued = recover(db) // resume any work a previous crash left mid-flight
   if (requeued) console.log(`recovered ${requeued} interrupted outbox item(s)`)
   const guardrails = createGuardrails(config)
+  writeFileSync(PID_PATH, String(process.pid)) // so `reset-cap` can signal us
+  process.on('SIGUSR2', () => { guardrails.clearHourly(); console.log('group hourly-cap cleared (reset-cap)') })
   const sentIds = new Set()
   const paths = { settingsPath: SETTINGS_PATH, scratchDir: SCRATCH_DIR }
   const log = (e) => appendUsage(USAGE_PATH, e)
@@ -94,6 +109,6 @@ if (cmd === 'login') {
   } })
   workerLoop()
 } else {
-  console.log('usage: node daemon.mjs <login|groups|set "<jid>"|start|on|off|stats>')
+  console.log('usage: node daemon.mjs <login|groups|set "<jid>"|start|on|off|stats|reset-cap>')
   process.exit(1)
 }
