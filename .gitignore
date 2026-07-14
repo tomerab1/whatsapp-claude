@@ -4,8 +4,13 @@ auth/
 messages.db*
 usage.jsonl
 scratch/
+media/
+py-venv/
 settings.locked.json
+settings.vision.json
 config.json
+daemon.pid
+dashboard.html
 
 # internal design docs (reference the author's other private group + home paths)
 docs/

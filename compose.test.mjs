@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { hardening, buildPrompt, finalizeReply, SARCASM, sarcasmReply } from './compose.mjs'
+import { hardening, buildPrompt, finalizeReply, SARCASM, sarcasmReply, voiceRequested } from './compose.mjs'
 
 const cfg = { botPrefix: '🤖', botName: 'Boaz', triggers: ['@boaz', '@בועז'], maxReplyChars: 1500 }
 
@@ -42,5 +42,15 @@ test('sarcasmReply escalates by violation and clamps to the last line, prefixed'
   assert.equal(sarcasmReply(1, cfg), `🤖 ${SARCASM[0]}`)
   assert.equal(sarcasmReply(3, cfg), `🤖 ${SARCASM[2]}`)
   assert.equal(sarcasmReply(99, cfg), `🤖 ${SARCASM[SARCASM.length - 1]}`) // clamped
-  assert.ok(sarcasmReply(1, cfg).startsWith('🤖 '))
+})
+
+test('sarcasmReply respects config.sarcasmLevel (0 = off, N = ceiling)', () => {
+  assert.equal(sarcasmReply(5, { ...cfg, sarcasmLevel: 0 }), null)          // disabled
+  assert.equal(sarcasmReply(5, { ...cfg, sarcasmLevel: 1 }), `🤖 ${SARCASM[0]}`) // capped at line 1
+})
+
+test('voiceRequested detects spoken-reply asks in both languages', () => {
+  assert.equal(voiceRequested('@boaz answer out loud'), true)
+  assert.equal(voiceRequested('@בועז תענה בהקלטה'), true)
+  assert.equal(voiceRequested('@בועז מה השעה'), false)
 })

@@ -1,17 +1,21 @@
 // daemon.mjs — CLI + the always-on watcher for whatsapp-claude (bot: Boaz).
 import { execSync } from 'node:child_process'
-import { mkdirSync, existsSync, readFileSync } from 'node:fs'
+import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { downloadMediaMessage } from 'baileys'
 import { connect } from './connect.mjs'
-import { writeFileSync } from 'node:fs'
 import {
-  loadConfig, saveConfig, DATA_DIR, DB_PATH, SETTINGS_PATH, SCRATCH_DIR, USAGE_PATH, PID_PATH,
+  loadConfig, saveConfig, DATA_DIR, DB_PATH, SETTINGS_PATH, VISION_SETTINGS_PATH, SCRATCH_DIR, MEDIA_DIR, USAGE_PATH, PID_PATH,
 } from './config.mjs'
 import { openDb, storeMessages } from './store.mjs'
 import { createGuardrails } from './guardrails.mjs'
 import { writeLockedSettings } from './sandbox.mjs'
+import { writeVisionSettings } from './vision.mjs'
 import { handleIncoming, processNext, appendUsage } from './orchestrate.mjs'
 import { initOutbox, recover, statusCounts, pendingCount } from './outbox.mjs'
 import { initSpam } from './spam.mjs'
+import { initMutes } from './mute.mjs'
+import { initReminders, dueReminders, markReminderSent } from './reminders.mjs'
 
 const cmd = process.argv[2]
 const config = loadConfig()
@@ -77,23 +81,32 @@ if (cmd === 'login') {
   process.exit(0)
 } else if (cmd === 'start') {
   if (!config.groupJid) { console.error('no target group — run groups then set first.'); process.exit(1) }
-  mkdirSync(DATA_DIR, { recursive: true }); mkdirSync(SCRATCH_DIR, { recursive: true })
+  mkdirSync(DATA_DIR, { recursive: true }); mkdirSync(SCRATCH_DIR, { recursive: true }); mkdirSync(MEDIA_DIR, { recursive: true })
   writeLockedSettings(SETTINGS_PATH, config)
+  writeVisionSettings(VISION_SETTINGS_PATH, MEDIA_DIR, config)
   const claudePath = resolveClaude()
   const db = openDb(DB_PATH)
-  initOutbox(db); initSpam(db)
+  initOutbox(db); initSpam(db); initMutes(db); initReminders(db)
   const requeued = recover(db) // resume any work a previous crash left mid-flight
   if (requeued) console.log(`recovered ${requeued} interrupted outbox item(s)`)
   const guardrails = createGuardrails(config)
   writeFileSync(PID_PATH, String(process.pid)) // so `reset-cap` can signal us
   process.on('SIGUSR2', () => { guardrails.clearHourly(); console.log('group hourly-cap cleared (reset-cap)') })
   const sentIds = new Set()
-  const paths = { settingsPath: SETTINGS_PATH, scratchDir: SCRATCH_DIR }
+  const paths = { settingsPath: SETTINGS_PATH, visionSettingsPath: VISION_SETTINGS_PATH, scratchDir: SCRATCH_DIR, mediaDir: MEDIA_DIR }
   const log = (e) => appendUsage(USAGE_PATH, e)
   // Never TRIGGER on backlog / messages WhatsApp replays on reconnect (5s grace).
   const asTs = (t) => (typeof t === 'number' ? t : t?.toNumber ? t.toNumber() : Number(t) || 0)
   const startedAt = Math.floor(Date.now() / 1000) - 5
   let sock
+
+  // Download an incoming voice note / image to the media dir; returns the file path.
+  const downloadMedia = async (msg, kind) => {
+    const buf = await downloadMediaMessage(msg, 'buffer', {})
+    const p = join(MEDIA_DIR, `${kind}-${msg.key.id}.${kind === 'image' ? 'jpg' : 'ogg'}`)
+    writeFileSync(p, buf)
+    return p
+  }
 
   // Single worker: drains the outbox one reply at a time (bounds cost, preserves order).
   async function workerLoop() {
@@ -103,17 +116,31 @@ if (cmd === 'login') {
     setTimeout(workerLoop, did ? 0 : config.workerPollMs)
   }
 
+  // Reminder scheduler: post any due reminders.
+  async function reminderLoop() {
+    try {
+      if (sock) for (const r of dueReminders(db)) {
+        const s = await sock.sendMessage(config.groupJid, { text: `${config.botPrefix} ⏰ תזכורת: ${r.text}` })
+        if (s?.key?.id) sentIds.add(s.key.id)
+        markReminderSent(db, r.id)
+        log({ ts: Date.now(), event: 'reminder-fired', id: r.id })
+      }
+    } catch (e) { console.error('reminder error:', e?.message || e) }
+    setTimeout(reminderLoop, config.reminderTickSec * 1000)
+  }
+
   console.log(`watching ${config.groupName || config.groupJid} — @${config.botName} bot ${config.enabled ? 'ON' : 'OFF'}`)
   sock = await connect({ onMessages: async (messages) => {
     storeMessages(db, messages, config.groupJid) // keep context fresh (all messages)
     for (const msg of messages) {
       if (asTs(msg.messageTimestamp) < startedAt) continue // skip backlog / replayed
       try {
-        await handleIncoming({ sock, msg, db, guardrails, config, sentIds, log })
+        await handleIncoming({ sock, msg, db, guardrails, config, sentIds, log, downloadMedia, saveConfig })
       } catch (e) { console.error('handleIncoming error:', e?.message || e) }
     }
   } })
   workerLoop()
+  reminderLoop()
 } else {
   console.log('usage: node daemon.mjs <login|groups|set "<jid>"|start|on|off|stats|reset-cap>')
   process.exit(1)

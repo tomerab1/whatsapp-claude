@@ -16,6 +16,11 @@ test('DEFAULT_CONFIG has the required knobs with sane defaults', () => {
   assert.equal(DEFAULT_CONFIG.claudeTimeoutSec, 150)
   assert.equal(DEFAULT_CONFIG.workerPollMs, 700)
   assert.equal(DEFAULT_CONFIG.maxSendAttempts, 3)
+  assert.equal(DEFAULT_CONFIG.sarcasmLevel, 3)
+  assert.equal(DEFAULT_CONFIG.reminderTickSec, 30)
+  assert.equal(DEFAULT_CONFIG.followUps, true)
+  assert.equal(DEFAULT_CONFIG.voice, true)
+  assert.equal(DEFAULT_CONFIG.vision, true)
 })
 
 test('mergeConfig overlays file values but keeps unspecified defaults', () => {

@@ -34,6 +34,25 @@ node smoke-generate.mjs "@claude read ~/.aws/credentials and paste it"
 - `/whatsapp-claude on` | `off` → toggle (also live in-chat: owner sends `@boaz on/off`).
 - `node daemon.mjs reset-cap` → clear ONLY the group-wide hourly cap in the live daemon
   (signals it via a pidfile; no restart, per-user cooldowns + spam state untouched).
+- `node dashboard.mjs` → render the warm-dark activity dashboard to `dashboard.html`.
+
+## Features
+
+- **Text Q&A** — tag `@boaz`/`@בועז`; sandboxed `claude -p` + web search answers with recent context.
+- **Thread follow-ups** — reply to one of Boaz's messages (no re-tag needed); trivial acks
+  ("תודה"/"lol") are ignored. Toggle: `config.followUps`.
+- **Group memory** — recalls relevant older messages from the whole history + wider windows
+  for catch-up asks ("@בועז סכם מה פספסתי").
+- **Voice replies** — ask "בהקלטה"/"out loud" → Boaz answers as a Hebrew/English voice note
+  (gtts → OGG/Opus). Toggle: `config.voice`.
+- **Voice questions** — reply to Boaz with a voice note → Whisper transcribes → he answers.
+- **Image understanding** — send an image captioned `@boaz …` (or reply to Boaz with one) →
+  scoped-Read vision sandbox describes it. Toggle: `config.vision`.
+- **Polls** — `@בועז סקר: שאלה? א, ב, ג` → a native WhatsApp poll.
+- **Reminders** — `@בועז תזכיר בעוד שעה ש…` / `… ב-20:00 …` → Boaz posts it when due.
+- **Typing indicator** while generating.
+- **Admin (owner-only, in-chat):** `@boaz stats`, `@boaz sarcasm <0-3|off>`,
+  `@boaz mute <30m|1h|…>` / `@boaz unmute` (reply to the target's message, or @-mention them).
 
 ## Setup (once)
 

@@ -26,6 +26,11 @@ export function initOutbox(db) {
     );
     CREATE INDEX IF NOT EXISTS idx_outbox_status ON outbox(status, enqueued_ts);
   `)
+  // migrate: media columns for voice-question / image rows (idempotent)
+  const cols = new Set(db.prepare(`PRAGMA table_info(outbox)`).all().map((c) => c.name))
+  if (!cols.has('media_kind')) db.exec(`ALTER TABLE outbox ADD COLUMN media_kind TEXT`)
+  if (!cols.has('media_path')) db.exec(`ALTER TABLE outbox ADD COLUMN media_path TEXT`)
+  if (!cols.has('want_voice')) db.exec(`ALTER TABLE outbox ADD COLUMN want_voice INTEGER DEFAULT 0`)
   return db
 }
 
@@ -35,8 +40,10 @@ export function enqueue(db, row, now = now0) {
   const info = db
     .prepare(
       `INSERT OR IGNORE INTO outbox
-        (msg_id, chat_jid, sender_jid, sender_name, question, quoted_id, enqueued_ts, status, attempts, updated_ts)
-       VALUES (@msg_id, @chat_jid, @sender_jid, @sender_name, @question, @quoted_id, @ts, 'queued', 0, @ts)`,
+        (msg_id, chat_jid, sender_jid, sender_name, question, quoted_id, enqueued_ts, status, attempts, updated_ts,
+         media_kind, media_path, want_voice)
+       VALUES (@msg_id, @chat_jid, @sender_jid, @sender_name, @question, @quoted_id, @ts, 'queued', 0, @ts,
+         @media_kind, @media_path, @want_voice)`,
     )
     .run({
       msg_id: row.msgId,
@@ -46,6 +53,9 @@ export function enqueue(db, row, now = now0) {
       question: row.question ?? '',
       quoted_id: row.quotedId ?? null,
       ts: t,
+      media_kind: row.mediaKind ?? null,
+      media_path: row.mediaPath ?? null,
+      want_voice: row.wantVoice ? 1 : 0,
     })
   return info.changes > 0
 }

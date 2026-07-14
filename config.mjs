@@ -8,8 +8,10 @@ export const AUTH_DIR = join(DATA_DIR, 'auth')
 export const DB_PATH = join(DATA_DIR, 'messages.db')
 export const CFG_PATH = join(DATA_DIR, 'config.json')
 export const SETTINGS_PATH = join(DATA_DIR, 'settings.locked.json')
+export const VISION_SETTINGS_PATH = join(DATA_DIR, 'settings.vision.json')
 export const USAGE_PATH = join(DATA_DIR, 'usage.jsonl')
 export const SCRATCH_DIR = join(DATA_DIR, 'scratch') // empty cwd for claude -p
+export const MEDIA_DIR = join(DATA_DIR, 'media')     // downloaded voice notes / images
 export const PID_PATH = join(DATA_DIR, 'daemon.pid') // running daemon's pid (for reset-cap)
 
 export const DEFAULT_CONFIG = {
@@ -29,6 +31,11 @@ export const DEFAULT_CONFIG = {
   claudeTimeoutSec: 150,   // web search can need several queries; 60s was killing them
   workerPollMs: 700,       // how often the outbox worker checks for queued work
   maxSendAttempts: 3,      // outbox delivery retries before a row is marked failed
+  sarcasmLevel: 3,         // 0 = no sarcasm to spammers; 1..3 = escalation ceiling
+  reminderTickSec: 30,     // how often to check for due reminders
+  followUps: true,         // reply when someone replies to Boaz without re-tagging
+  voice: true,             // allow voice-note replies (on request) + voice-question transcription
+  vision: true,            // allow image understanding on @boaz-captioned images
 }
 
 export function mergeConfig(fileCfg) {
