@@ -53,11 +53,14 @@ export function parseDuration(s) {
 const DEFAULT_MUTE_SEC = 3600
 const SARCASM_MAX_LEVEL = 3
 
-// Owner-only admin commands. ctx: { senderJid, ownerJid, triggers, quotedSenderJid, mentionedJids }.
-// Returns { cmd, ... } or null. cmd ∈ on|off|stats|sarcasm|mute|unmute.
+// Owner-only admin commands. ctx: { isOwner, senderJid, ownerJid, triggers, quotedSenderJid, mentionedJids }.
+// `isOwner` (the message is fromMe — the paired account is the owner) is the reliable signal;
+// senderJid===ownerJid is a fallback (fails in-group because members carry a @lid, not the phone jid).
+// Returns { cmd, ... } or null. cmd ∈ on|off|stats|sarcasm|mute|unmute|tv.
 export function parseAdminCommand(text, ctx) {
-  const { senderJid, ownerJid, triggers, quotedSenderJid, mentionedJids } = ctx || {}
-  if (!ownerJid || senderJid !== ownerJid) return null
+  const { isOwner, senderJid, ownerJid, triggers, quotedSenderJid, mentionedJids } = ctx || {}
+  const owner = isOwner ?? (!!ownerJid && senderJid === ownerJid)
+  if (!owner) return null
   const words = (triggers || []).map((t) => escapeRe(t.replace(/^@/, ''))).filter(Boolean)
   if (!words.length) return null
   const pfx = `^@(?:${words.join('|')})\\s+`

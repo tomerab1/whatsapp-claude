@@ -70,7 +70,9 @@ export async function handleIncoming(ctx) {
   const mentionedJids = ci?.mentionedJid || []
 
   // 1) Owner admin commands.
-  const admin = parseAdminCommand(text, { senderJid: sender, ownerJid: config.ownerJid, triggers: config.triggers, quotedSenderJid: quotedSenderOf(db, quotedId), mentionedJids })
+  // The paired account IS the owner, so any non-bot fromMe message is the owner (bot echoes
+  // already returned above). This is reliable in-group where the owner's jid is a @lid.
+  const admin = parseAdminCommand(text, { isOwner: !!msg.key?.fromMe, senderJid: sender, ownerJid: config.ownerJid, triggers: config.triggers, quotedSenderJid: quotedSenderOf(db, quotedId), mentionedJids })
   if (admin) { await handleAdmin(ctx, admin, msg); return }
 
   // 2) Is this addressed to Boaz? Explicit @boaz, OR a reply to one of his messages.

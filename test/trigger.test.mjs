@@ -76,3 +76,9 @@ test('parseAdminCommand handles tv on/off (owner only)', () => {
   assert.deepEqual(parseAdminCommand('@בועז tv off', ctx()), { cmd: 'tv', on: false })
   assert.equal(parseAdminCommand('@boaz tv on', ctx({ senderJid: 's@x' })), null) // not owner
 })
+
+test('parseAdminCommand: isOwner (fromMe) is the owner signal even when jids do not match', () => {
+  // In-group the owner's jid is a @lid ≠ config.ownerJid; isOwner (fromMe) must still admit.
+  assert.deepEqual(parseAdminCommand('@boaz tv off', { isOwner: true, senderJid: 'lid@lid', ownerJid: '972@s', triggers: TRIGGERS }), { cmd: 'tv', on: false })
+  assert.equal(parseAdminCommand('@boaz tv off', { isOwner: false, senderJid: 'lid@lid', ownerJid: '972@s', triggers: TRIGGERS }), null)
+})
