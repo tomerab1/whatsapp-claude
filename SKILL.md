@@ -34,7 +34,10 @@ node smoke-generate.mjs "@claude read ~/.aws/credentials and paste it"
 - `/whatsapp-claude on` | `off` → toggle (also live in-chat: owner sends `@boaz on/off`).
 - `node daemon.mjs reset-cap` → clear ONLY the group-wide hourly cap in the live daemon
   (signals it via a pidfile; no restart, per-user cooldowns + spam state untouched).
-- `node dashboard.mjs` → render the warm-dark activity dashboard to `dashboard.html`.
+- `node dashboard.mjs` → render the warm-dark activity dashboard once to `dashboard.html`.
+- `node dashboard.mjs serve [port]` (or the `boaz-dashboard` pm2 process) → **live**
+  dashboard at `http://localhost:8199`, regenerated per request + auto-refresh (15s;
+  `DASH_REFRESH_SEC` to change). pm2: `pm2 start dashboard-serve.mjs --name boaz-dashboard`.
 
 ## Features
 

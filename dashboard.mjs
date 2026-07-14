@@ -8,6 +8,7 @@
 //   renderDashboard(path, path)  — opens the db read-only, reads the log, composes both.
 import Database from 'better-sqlite3'
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import { createServer } from 'node:http'
 import { dirname, resolve, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { DATA_DIR, DB_PATH, USAGE_PATH } from './config.mjs'
@@ -445,8 +446,35 @@ export function renderDashboard(dbPath = DB_PATH, usagePath = USAGE_PATH) {
   }
 }
 
+// ── live server ──────────────────────────────────────────────────────────────
+const DEFAULT_PORT = 8199
+
+// Serve a fresh dashboard on every request; the page reloads itself on an interval.
+export function serveDashboard(port = DEFAULT_PORT, refreshMs = 15000) {
+  const reloader = `<script>setTimeout(function(){location.reload()}, ${refreshMs})</script>`
+  const server = createServer((req, res) => {
+    if (req.url && req.url !== '/') { res.writeHead(204); res.end(); return } // ignore favicon etc.
+    try {
+      const html = renderDashboard().replace('</body>', reloader + '</body>')
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' })
+      res.end(html)
+    } catch (e) {
+      res.writeHead(500, { 'content-type': 'text/plain' })
+      res.end('dashboard error: ' + (e?.message || e))
+    }
+  })
+  server.listen(port, () => process.stdout.write(`Boaz dashboard live → http://localhost:${port}  (auto-refresh ${Math.round(refreshMs / 1000)}s)\n`))
+  return server
+}
+
 // ── CLI ────────────────────────────────────────────────────────────────────
 function main(argv) {
+  if (argv[2] === 'serve') {
+    const port = Number(argv[3]) || DEFAULT_PORT
+    const refreshMs = (Number(process.env.DASH_REFRESH_SEC) || 15) * 1000
+    serveDashboard(port, refreshMs)
+    return
+  }
   const outFile = argv[2] || DEFAULT_OUT
   const html = renderDashboard()
   mkdirSync(dirname(outFile), { recursive: true })
