@@ -13,7 +13,7 @@ test('DEFAULT_CONFIG has the required knobs with sane defaults', () => {
   assert.equal(DEFAULT_CONFIG.hourlyCap, 30)
   assert.equal(DEFAULT_CONFIG.maxReplyChars, 1500)
   assert.equal(DEFAULT_CONFIG.contextMessages, 20)
-  assert.equal(DEFAULT_CONFIG.claudeTimeoutSec, 60)
+  assert.equal(DEFAULT_CONFIG.claudeTimeoutSec, 150)
   assert.equal(DEFAULT_CONFIG.workerPollMs, 700)
   assert.equal(DEFAULT_CONFIG.maxSendAttempts, 3)
 })

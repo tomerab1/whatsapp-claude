@@ -17,8 +17,14 @@ const cmd = process.argv[2]
 const config = loadConfig()
 
 function resolveClaude() {
-  try { return execSync('command -v claude', { shell: '/bin/zsh' }).toString().trim() }
+  let p
+  try { p = execSync('command -v claude', { shell: '/bin/zsh' }).toString().trim() }
   catch { throw new Error('cannot find the `claude` binary on PATH') }
+  // Fail fast at startup instead of ENOENT-ing on every reply (e.g. a stale path
+  // left behind mid-update). config.claudePath can override if resolution is wrong.
+  const chosen = config.claudePath || p
+  if (!chosen || !existsSync(chosen)) throw new Error(`claude binary not found at "${chosen || '(empty)'}"`)
+  return chosen
 }
 
 if (cmd === 'login') {

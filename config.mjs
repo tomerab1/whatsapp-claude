@@ -26,7 +26,7 @@ export const DEFAULT_CONFIG = {
   hourlyCap: 30,
   maxReplyChars: 1500,
   contextMessages: 20,
-  claudeTimeoutSec: 60,
+  claudeTimeoutSec: 150,   // web search can need several queries; 60s was killing them
   workerPollMs: 700,       // how often the outbox worker checks for queued work
   maxSendAttempts: 3,      // outbox delivery retries before a row is marked failed
 }
